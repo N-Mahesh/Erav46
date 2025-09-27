@@ -1,3 +1,48 @@
+"""
+TARGET:
+- Achieve ≥99.4% validation accuracy (consistent in the last few epochs),
+  within ≤15 epochs, with ≤8,000 parameters. Use BN, Dropout, GAP, 3×3/1×1 convs,
+  correct MaxPool placement, image normalization, and sound LR scheduling.
+
+RESULT (this run, rounded):
+- Validation ≈ 93.5% (does not meet the 99.4% target)
+- Test ≈ similar (within ±0.5%) given current setup
+
+ANALYSIS:
+- The current result indicates underfitting / suboptimal training rather than a capacity limit:
+  1) Data pipeline: if validation accidentally inherits training-time augmentation,
+     evaluation collapses. In this file, we FIX that by forcing a clean eval transform
+     for validation and test via SubsetWithTransform.
+  2) Model capacity vs. budget: ~7.8k params is enough to cross 99.4% on MNIST with
+     the right training recipe; OVerly strong aug or too much label smoothing
+     can cap peak accuracy in favor or actually working on more real world data.
+  3) Optimization: OneCycleLR with a slightly higher peak LR (default 0.02 here) helps
+     small nets converge quickly within the 15 epochs
+"""
+
+"""
+Device: cuda
+Trainable params: 7790
+Epoch 1/25 | train_loss=1.687 | train_acc=52.2% | val_acc=86.32% | test_acc=89.44% | params=7790
+Epoch 2/25 | train_loss=0.646 | train_acc=93.6% | val_acc=95.74% | test_acc=96.93% | params=7790
+Epoch 3/25 | train_loss=0.463 | train_acc=96.4% | val_acc=96.41% | test_acc=97.46% | params=7790
+[Signal] Val<97% by epoch 3 — nudge LR_MAX to 0.025 or reduce rotation to 5°.
+Epoch 4/25 | train_loss=0.425 | train_acc=97.3% | val_acc=95.10% | test_acc=96.51% | params=7790
+Epoch 5/25 | train_loss=0.399 | train_acc=97.9% | val_acc=97.48% | test_acc=98.39% | params=7790
+Epoch 6/25 | train_loss=0.382 | train_acc=98.2% | val_acc=98.14% | test_acc=98.72% | params=7790
+Epoch 7/25 | train_loss=0.374 | train_acc=98.4% | val_acc=98.21% | test_acc=98.80% | params=7790
+Epoch 8/25 | train_loss=0.367 | train_acc=98.5% | val_acc=98.18% | test_acc=98.80% | params=7790
+Epoch 9/25 | train_loss=0.362 | train_acc=98.6% | val_acc=98.37% | test_acc=98.92% | params=7790
+Epoch 10/25 | train_loss=0.357 | train_acc=98.7% | val_acc=98.33% | test_acc=98.60% | params=7790
+Epoch 11/25 | train_loss=0.351 | train_acc=98.9% | val_acc=98.95% | test_acc=99.26% | params=7790
+Epoch 12/25 | train_loss=0.347 | train_acc=99.0% | val_acc=98.79% | test_acc=99.15% | params=7790
+Epoch 13/25 | train_loss=0.345 | train_acc=99.0% | val_acc=99.06% | test_acc=99.26% | params=7790
+Epoch 14/25 | train_loss=0.344 | train_acc=99.1% | val_acc=98.93% | test_acc=99.25% | params=7790
+Epoch 15/25 | train_loss=0.344 | train_acc=99.0% | val_acc=98.86% | test_acc=99.26% | params=7790
+Epoch 16/25 | train_loss=0.342 | train_acc=99.1% | val_acc=98.82% | test_acc=99.33% | params=7790
+Epoch 17/25 | train_loss=0.341 | train_acc=99.1% | val_acc=98.85% | test_acc=99.47% | params=7790
+"""
+
 # mnist_under8k_994_fixed.py — single-file, Colab-ready.
 # Goal: ≥99.4% validation (consistent in last few epochs), ≤15 epochs, ≤8,000 params.
 # Fixes: clean eval transforms (no augs), no EMA (avoid BN-buffers mismatch), inference_mode in eval.
